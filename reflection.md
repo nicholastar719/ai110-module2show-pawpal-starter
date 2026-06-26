@@ -4,14 +4,17 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
+- Briefly describe your initial UML design?
 - What classes did you include, and what responsibilities did you assign to each?
+
+I designed four classes: Owner, Pet, Task, and Scheduler. The Owner manages pets , the Pet stores pet information and tasks, the Task represents care activities like feeding or walks, and the Scheduler organizes tasks and checks for sccheduling conflicts. 
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
+I added a recurring attribute to the Task class because many pet care activities happen regularly. I also keep the scheduling logic in a separate Scheduler class to keep the design organized.
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
