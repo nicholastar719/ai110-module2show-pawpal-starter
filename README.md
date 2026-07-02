@@ -65,10 +65,27 @@ pytest --cov
 ```
 
 Sample test output:
+  Buddy (Dog, Labrador)
+  ------------------------------------
+      -    [Exercise  ]  Morning Walk          08:00 AM
+      -    [Nutrition ]  Lunch Feeding         12:00 PM
 
-```
+  Whiskers (Cat, Siamese)
+  ------------------------------------
+      -    [Health    ]  Vet Checkup           03:00 PM
+
+==========================================
+
 # Paste your pytest output here
-```
+============================================================== test session starts ===============================================================
+platform win32 -- Python 3.13.0, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\teacl\ai110-module2show-pawpal-starter
+plugins: anyio-4.13.0
+collected 2 items                                                                                                                                 
+
+tests\test_pawpal.py ..                                                                                                                     [100%]
+
+=============================================================== 2 passed in 0.11s ================================================================
 
 ## 📐 Smarter Scheduling
 
