@@ -71,10 +71,14 @@ I am moderately confident the scheduler works correctly for the intended scope. 
 
 - What part of this project are you most satisfied with?
 
+The most successful part of this project was building the scheduling system with filtering, sorting, and recurring task support. Getting the backend logic to work correctly with the Streamlit interface was especially satisfying because it showed the system working end-to-end.
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+If I had another iteration, I would improve the scheduling model by adding support for overlapping time ranges instead of exact time matching. I would also improve the UI to allow selecting which pet a task belongs to instead of assigning it automatically.
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+A key takeaway is that designing a system is easier when logic is separated into clear layers (data models, scheduling logic, and UI). I also learned that using AI effectively requires reviewing and adjusting suggestions rather than directly accepting them, especially when ensuring consistency across multiple components.
