@@ -1,77 +1,190 @@
-from datetime import date
+import datetime
+from dataclasses import dataclass, field
+
+_PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 
 
+# -----------------------
+# TASK
+# -----------------------
+@dataclass
 class Task:
-    def __init__(self, title: str, description: str, due_date: date, completed: bool = False):
-        self.title = title
-        self.description = description
-        self.due_date = due_date
-        self.completed = completed
+    title: str
+    description: str        # format: "HH:MM AM/PM | TaskType"
+    due_date: str           # ISO format "YYYY-MM-DD"
+    priority: str = "medium"
+    completed: bool = False
+    recurring: bool = False
+    recur_interval_days: int = 0
 
     def mark_complete(self) -> None:
-        pass
+        self.completed = True
+
+    def next_occurrence(self) -> "Task | None":
+        """Return a new Task advanced by recur_interval_days (1=daily, 7=weekly), or None."""
+        if not self.recurring or self.recur_interval_days <= 0:
+            return None
+        next_date = (
+            datetime.date.fromisoformat(self.due_date)
+            + datetime.timedelta(days=self.recur_interval_days)
+        )
+        return Task(
+            title=self.title,
+            description=self.description,
+            due_date=next_date.isoformat(),
+            priority=self.priority,
+            recurring=self.recurring,
+            recur_interval_days=self.recur_interval_days,
+        )
 
     def is_overdue(self) -> bool:
-        pass
+        today = datetime.date.today().isoformat()
+        return not self.completed and self.due_date < today
 
     def get_details(self) -> str:
-        pass
+        return f"{self.title} | {self.due_date} | {self.priority}"
 
 
+# -----------------------
+# PET
+# -----------------------
+@dataclass
 class Pet:
-    def __init__(self, name: str, species: str, breed: str, age: int):
-        self.name = name
-        self.species = species
-        self.breed = breed
-        self.age = age
-        self._tasks: list[Task] = []
+    name: str
+    species: str
+    breed: str = ""
+    age: int = 0
+
+    _tasks: list[Task] = field(default_factory=list, init=False)
 
     def add_task(self, task: Task) -> None:
-        pass
+        self._tasks.append(task)
 
     def remove_task(self, task: Task) -> None:
-        pass
+        if task in self._tasks:
+            self._tasks.remove(task)
 
     def get_tasks(self) -> list[Task]:
-        pass
+        return list(self._tasks)
 
     def get_info(self) -> str:
-        pass
+        return f"{self.name} ({self.species})"
 
 
+# -----------------------
+# OWNER
+# -----------------------
+@dataclass
 class Owner:
-    def __init__(self, name: str, email: str, phone: str):
-        self.name = name
-        self.email = email
-        self.phone = phone
-        self._pets: list[Pet] = []
+    name: str
+    email: str = ""
+    phone: str = ""
+
+    _pets: list[Pet] = field(default_factory=list, init=False)
 
     def add_pet(self, pet: Pet) -> None:
-        pass
+        self._pets.append(pet)
 
     def remove_pet(self, pet: Pet) -> None:
-        pass
+        if pet in self._pets:
+            self._pets.remove(pet)
 
     def get_pets(self) -> list[Pet]:
-        pass
+        return list(self._pets)
 
     def view_schedule(self) -> None:
-        pass
+        for pet in self._pets:
+            for task in pet.get_tasks():
+                print(f"{pet.name}: {task.title}")
 
 
+# -----------------------
+# SCHEDULER
+# -----------------------
+@dataclass
 class Scheduler:
-    def __init__(self):
-        self._pets: list[Pet] = []
-        self._tasks: list[Task] = []
+    _pets: list[Pet] = field(default_factory=list, init=False)
+    _tasks: list[Task] = field(default_factory=list, init=False)
 
     def schedule_task(self, pet: Pet, task: Task) -> None:
-        pass
+        """Register a task for a pet and add it to the scheduler's tracking lists."""
+        self._pets.append(pet)
+        self._tasks.append(task)
+        pet.add_task(task)
 
     def get_upcoming_tasks(self) -> list[Task]:
-        pass
+        """Return all tasks across every pet, in insertion order."""
+        return self._tasks
 
     def get_tasks_by_pet(self, pet: Pet) -> list[Task]:
-        pass
+        """Return all tasks belonging to the given pet."""
+        return pet.get_tasks()
 
     def send_reminders(self) -> None:
-        pass
+        """Print a reminder for every incomplete task."""
+        for task in self._tasks:
+            if not task.completed:
+                print(f"Reminder: {task.title}")
+
+    # --- Sorting ---
+
+    def get_tasks_sorted(self, by: str = "priority") -> list[Task]:
+        """Return tasks sorted by 'priority' (high→low), 'date', or 'time'."""
+        if by == "date":
+            return sorted(self._tasks, key=lambda t: t.due_date)
+        if by == "time":
+            return sorted(self._tasks, key=lambda t: datetime.datetime.strptime(
+                t.description.split(" | ")[0].strip(), "%I:%M %p").time())
+        return sorted(self._tasks, key=lambda t: _PRIORITY_ORDER.get(t.priority, 1))
+
+    # --- Filtering ---
+
+    def get_pending_tasks(self) -> list[Task]:
+        """Return only tasks that are not yet completed."""
+        return self.filter_tasks(completed=False)
+
+    def get_tasks_by_priority(self, priority: str) -> list[Task]:
+        """Return tasks matching the given priority level."""
+        return [t for t in self._tasks if t.priority == priority]
+
+    def filter_tasks(self, completed: bool = False, pet: Pet | None = None) -> list[Task]:
+        """Return tasks matching the given completion status, scoped to one pet if provided."""
+        source = pet.get_tasks() if pet is not None else self._tasks
+        return [t for t in source if t.completed == completed]
+
+    # --- Conflict detection ---
+
+    def detect_conflicts(self) -> list[str]:
+        """Return warning strings for any tasks across all pets sharing the same date and time."""
+        slots = {}
+        for pet, task in zip(self._pets, self._tasks):
+            time_str = task.description.split(" | ")[0].strip()
+            key = (task.due_date, time_str)
+            slots.setdefault(key, []).append((pet, task))
+
+        warnings = []
+        for (date, time_str), entries in slots.items():
+            if len(entries) < 2:
+                continue
+            labels = [f"{pet.name} '{task.title}'" for pet, task in entries]
+            warnings.append(f"Conflict on {date} at {time_str}: {', '.join(labels)}")
+        return warnings
+
+    # --- Recurring task generation ---
+
+    def complete_task(self, pet: Pet, task: Task) -> "Task | None":
+        """Mark a task done and auto-schedule its next occurrence if it is recurring."""
+        task.mark_complete()
+        next_task = task.next_occurrence()
+        if next_task is not None:
+            self.schedule_task(pet, next_task)
+        return next_task
+
+    def generate_recurring_tasks(self, pet: Pet, task: Task, occurrences: int = 3) -> None:
+        """Schedule future copies of a recurring task at its defined interval."""
+        current = task
+        for _ in range(occurrences):
+            current = current.next_occurrence()
+            if current is None:
+                break
+            self.schedule_task(pet, current)
